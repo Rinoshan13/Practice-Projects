@@ -1,0 +1,7 @@
+sample,condition,batch,seq_date
+S1,control,1,2024-01-15
+S2,control,1,2024-01-15
+S3,control,,2024-01-22
+S4,treated,2,2024-02-05
+S5,treated,2,2024-02-05
+S6,treated,1,2024-02-12
