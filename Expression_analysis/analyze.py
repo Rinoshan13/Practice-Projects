@@ -9,16 +9,16 @@ def data_load_inspection():
     counts = pd.read_csv(HERE/"counts.csv")
     meta = pd.read_csv(HERE/"metadata.csv")
 
-    # print(counts.head())
-    # print("counts shape:",counts.shape)
-    # print("columns:",list(counts.columns))
-    # print("dtype:\n", counts.dtypes)
+    print(counts.head())
+    print("counts shape:",counts.shape)
+    print("columns:",list(counts.columns))
+    print("dtype:\n", counts.dtypes)
 
-    # counts.info()
+    counts.info()
 
-    # print(counts.describe())
+    print(counts.describe())
 
-    # print("metadata:\n", meta.tail())
+    print("metadata:\n", meta.tail())
 
     return counts, meta
 
@@ -61,17 +61,32 @@ def normalise_the_data(counts):
     return log_cpm, labels
 
 
+#Reshaping the wide to long & back
+def reshape_long(counts):
+    long =counts.melt(id_vars="gene", var_name="sample", value_name="count")
+    print(long.head())
+    print("long shape:", long.shape)
 
+    wide_again = long.pivot_table(index="gene",columns="sample", values="count")
+    print("pivot back shape:",wide_again.shape)
+    print(wide_again.head(5))
 
+    return long
 
+long = reshape_long(counts)
 
+#Add the metadata and fixing the missing values
+def merge_and_clean(long, meta):
+    merged = long.merge(meta,on="sample", how ="left")
+    print("missing values per column:\n", merged.isna().sum())
+    print("row if we dropped NaNs:",merged.dropna().shape[0],"of",merged.shape[0])
 
-normalise_the_data(counts)
+    merged["batch"] = merged["batch"].fillna(1)
+    merged["batch"] = merged["batch"].astype(int)
 
+    print("missing after fill:",int(merged.isna().sum().sum()))
+    return merged
 
-
-
-
-
+merge_and_clean(long,meta)
 
 
