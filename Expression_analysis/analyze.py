@@ -75,6 +75,7 @@ def reshape_long(counts):
 
 long = reshape_long(counts)
 
+
 #Add the metadata and fixing the missing values
 def merge_and_clean(long, meta):
     merged = long.merge(meta,on="sample", how ="left")
@@ -87,6 +88,38 @@ def merge_and_clean(long, meta):
     print("missing after fill:",int(merged.isna().sum().sum()))
     return merged
 
-merge_and_clean(long,meta)
+merged = merge_and_clean(long,meta)
+
+
+#Explore
+def explore(merged):
+    hits = merged[(merged["condition"] == "treated") & (merged["count"]>200)]
+
+    print("treated rows with count. > 200:",hits.shape[0])
+
+    print("loc[0, 'gene']:", merged.loc[0, "gene"])
+    print("iloc[0,0]:",merged.iloc[0,0])
+
+    print("condition counts:\n", merged["condition"].value_counts())
+    print("distinct condition:", merged["condition"].unique(),"| n =",merged["condition"].nunique())
+
+    print("all sample IDs start with 'S':",merged["sample"].str.startswith("S").all())
+
+    merged["sample_num"] = merged["sample"].str.replace("S","",regex=False).astype(int)
+    merged["seq_date"] = pd.to_datetime(merged["seq_date"])
+
+    merged["log_count"] = np.log1p(merged["count"])
+
+    merged["level"] = merged["count"].apply(lambda c: "high" if c >= 200 else "low")
+
+    print(merged[["gene","sample","count","log_count", "level", "month"]].head())
+
+    return merged
+
+
+
+
+
+merged = merge_and_clean(long,meta)
 
 
