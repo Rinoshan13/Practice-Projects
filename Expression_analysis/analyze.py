@@ -22,8 +22,6 @@ def data_load_inspection():
 
     return counts, meta
 
-counts,meta= data_load_inspection()
-
 
 # Normalise the data with numpy
 def normalise_the_data(counts):
@@ -73,8 +71,6 @@ def reshape_long(counts):
 
     return long
 
-long = reshape_long(counts)
-
 
 #Add the metadata and fixing the missing values
 def merge_and_clean(long, meta):
@@ -87,8 +83,6 @@ def merge_and_clean(long, meta):
 
     print("missing after fill:",int(merged.isna().sum().sum()))
     return merged
-
-merged = merge_and_clean(long,meta)
 
 
 #Explore
@@ -107,6 +101,7 @@ def explore(merged):
 
     merged["sample_num"] = merged["sample"].str.replace("S","",regex=False).astype(int)
     merged["seq_date"] = pd.to_datetime(merged["seq_date"])
+    merged["month"] = merged["seq_date"].dt.month
 
     merged["log_count"] = np.log1p(merged["count"])
 
@@ -117,9 +112,44 @@ def explore(merged):
     return merged
 
 
+#Group, Combine and Summarise
+def summarise(merged):
+    by_condition = (merged.groupby("condition").agg(mean_count=("count","mean"),n=("count","size")).reset_index())
+    print("per condition:\n",by_condition)
+
+    by_gene = (merged.groupby("gene").agg(mean_count = ("count","mean"),n=("count","size")).reset_index().sort_values("mean_count",ascending=False))
+    print("per gene (top 3):\n", by_gene.head(3))
+
+    ctrl = merged[merged["condition"]=="control"].groupby("gene")["count"].mean()
+    trt  = merged[merged["condition"]=="treated"].groupby("gene")["count"].mean()
+
+    combined = pd.concat([ctrl.rename("control_mean"),trt.rename("treated_mean")], axis=1).reset_index()
+
+    combined["fold_change"] = (combined["treated_mean"] / combined["control_mean"]).round(2)
+
+    print("control vs treated:\n", combined.sort_values("fold_change",ascending = False))
+
+    stacked =np.vstack([ctrl.to_numpy(), trt.to_numpy()])
+    print("vstacked shape (2 x genes):", stacked.shape)
+
+    return by_gene
 
 
+#Save results
+def save_outputs(merged, by_gene):
+    merged.to_csv("tidy_expression.csv", index=False)
+    by_gene.to_csv("gene_summary.csv", index=False)
 
-merged = merge_and_clean(long,meta)
+    print(f"Wrote {len(merged)} row to tidy_expression.csv " f"and {len(by_gene)} row to gene_summary.csv")
 
 
+#Run the pipeline
+if __name__ == "__main__":
+    counts,meta = data_load_inspection()
+    normalise_the_data(counts)
+    long =reshape_long(counts)
+    merged = merge_and_clean(long,meta)
+    merged = explore(merged)
+    by_gene = summarise(merged)
+    save_outputs(merged,by_gene)
+    print("\nDone.")
