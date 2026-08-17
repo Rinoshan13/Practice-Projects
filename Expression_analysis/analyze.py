@@ -137,8 +137,8 @@ def summarise(merged):
 
 #Save results
 def save_outputs(merged, by_gene):
-    merged.to_csv("tidy_expression.csv", index=False)
-    by_gene.to_csv("gene_summary.csv", index=False)
+    merged.to_csv(HERE/"tidy_expression.csv", index=False)
+    by_gene.to_csv(HERE/"gene_summary.csv", index=False)
 
     print(f"Wrote {len(merged)} row to tidy_expression.csv " f"and {len(by_gene)} row to gene_summary.csv")
 
